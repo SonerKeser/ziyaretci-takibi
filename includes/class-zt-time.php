@@ -29,6 +29,9 @@ class ZT_Time {
 	 * @return bool Senkron denendiyse ve başarılıysa true.
 	 */
 	public static function maybe_sync() {
+		if ( ! ZT_Settings::get( 'time_sync' ) ) {
+			return false;
+		}
 		$last = (int) get_option( self::OPT_SYNCED, 0 );
 		if ( ( time() - $last ) < self::MIN_INTERVAL ) {
 			return false;
@@ -113,7 +116,22 @@ class ZT_Time {
 	 * Düzeltilmiş "şu an" — Unix zaman damgası (GMT).
 	 */
 	public static function now_ts() {
+		if ( ! ZT_Settings::get( 'time_sync' ) ) {
+			return time(); // Harici doğrulama kapalı: sunucunun kendi saati.
+		}
 		return time() + (int) get_option( self::OPT_OFFSET, 0 );
+	}
+
+	/**
+	 * Site yerel saatinin "sahte" Unix zaman damgası: gerçek zaman + gmt_offset.
+	 *
+	 * visited_at, created_at gibi alanlar site yerel saatinde saklandığından, bunlarla
+	 * kıyaslanacak pencereler (bugün, son 1 saat, son N gün…) bu değerden gmdate() ile
+	 * üretilmelidir. Gerçek GMT zaman damgası (now_ts) bu amaçla KULLANILMAZ; UTC dışındaki
+	 * saat dilimlerinde pencereleri kaydırır.
+	 */
+	public static function local_ts() {
+		return self::now_ts() + (int) round( (float) get_option( 'gmt_offset' ) * HOUR_IN_SECONDS );
 	}
 
 	/**
@@ -121,8 +139,7 @@ class ZT_Time {
 	 * dilimine göre yerel tarih/saat metni ("Y-m-d H:i:s").
 	 */
 	public static function mysql() {
-		$offset_sec = (int) round( (float) get_option( 'gmt_offset' ) * HOUR_IN_SECONDS );
-		return gmdate( 'Y-m-d H:i:s', self::now_ts() + $offset_sec );
+		return gmdate( 'Y-m-d H:i:s', self::local_ts() );
 	}
 
 	/**

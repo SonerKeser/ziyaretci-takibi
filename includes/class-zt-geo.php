@@ -173,7 +173,7 @@ class ZT_Geo {
 	public static function requeue_failed( $older_than_hours = 24 ) {
 		global $wpdb;
 		$table  = $wpdb->prefix . 'zt_geo';
-		$cutoff = gmdate( 'Y-m-d H:i:s', ZT_Time::now_ts() - $older_than_hours * HOUR_IN_SECONDS );
+		$cutoff = gmdate( 'Y-m-d H:i:s', ZT_Time::local_ts() - $older_than_hours * HOUR_IN_SECONDS );
 		$wpdb->query( $wpdb->prepare(
 			"UPDATE {$table} SET status = 'pending' WHERE status = 'fail' AND (looked_up_at IS NULL OR looked_up_at < %s)",
 			$cutoff

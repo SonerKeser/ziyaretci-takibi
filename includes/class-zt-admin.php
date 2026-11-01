@@ -495,6 +495,9 @@ class ZT_Admin {
 		if ( '' === $ip || ! filter_var( $ip, FILTER_VALIDATE_IP ) ) {
 			wp_send_json_error( array( 'message' => 'Geçersiz IP adresi.' ) );
 		}
+		if ( $ip === ZT_Tracker::get_ip() ) {
+			wp_send_json_error( array( 'message' => 'Kendi IP adresinizi engelleyemezsiniz.' ) );
+		}
 		self::update_blocklist( $ip, true );
 		wp_send_json_success( array( 'message' => $ip . ' engellendi.', 'blocked' => true ) );
 	}
@@ -530,6 +533,9 @@ class ZT_Admin {
 		self::guard();
 		$action = self::post( 'op' );
 		if ( 'apply' === $action ) {
+			if ( ZT_Server_Rules::would_block_current() ) {
+				wp_send_json_error( array( 'message' => 'Kendi IP adresiniz kara listede. Kurallar .htaccess\'e yazılırsa wp-admin dahil siteye erişemezsiniz; önce kendi IP\'nizi listeden çıkarın.' ) );
+			}
 			$ok = ZT_Server_Rules::htaccess_apply();
 			if ( $ok ) {
 				wp_send_json_success( array( 'message' => 'Kurallar .htaccess dosyasına yazıldı.', 'status' => ZT_Server_Rules::htaccess_status() ) );
@@ -556,6 +562,9 @@ class ZT_Admin {
 
 	public static function ajax_time_sync() {
 		self::guard();
+		if ( ! ZT_Settings::get( 'time_sync' ) ) {
+			wp_send_json_error( array( 'message' => 'Harici zaman doğrulaması kapalı. Önce Ayarlar\'dan açıp kaydedin.' ) );
+		}
 		$ok = ZT_Time::sync();
 		$st = ZT_Time::status();
 		wp_send_json_success( array(
@@ -581,6 +590,15 @@ class ZT_Admin {
 		// Kara liste .htaccess'te yönetiliyorsa kuralları tazele.
 		ZT_Server_Rules::sync_if_managed();
 
+		// Kendi IP'niz listedeyse .htaccess güncellenmez (kilitlenme koruması); nedenini söyle.
+		$lock_note = '';
+		if ( ZT_Server_Rules::would_block_current() ) {
+			$st = ZT_Server_Rules::htaccess_status();
+			if ( ! empty( $st['managed'] ) ) {
+				$lock_note = ' Uyarı: kendi IP adresiniz kara listede olduğundan .htaccess kuralları güncellenmedi.';
+			}
+		}
+
 		// Veri merkezi bayrağı açıksa mevcut ziyaretleri hemen temizle.
 		$swept = 0;
 		if ( ! empty( $saved['flag_datacenter'] ) ) {
@@ -590,7 +608,7 @@ class ZT_Admin {
 		wp_send_json_success( array(
 			'settings' => $saved,
 			'swept'    => $swept,
-			'message'  => 'Ayarlar kaydedildi.' . ( $swept > 0 ? ' ' . $swept . ' veri merkezi ziyareti bot olarak işaretlendi.' : '' ),
+			'message'  => 'Ayarlar kaydedildi.' . ( $swept > 0 ? ' ' . $swept . ' veri merkezi ziyareti bot olarak işaretlendi.' : '' ) . $lock_note,
 		) );
 	}
 
@@ -644,6 +662,19 @@ class ZT_Admin {
 	 * CSV DIŞA AKTARMA
 	 * ───────────────────────────────────────────── */
 
+	/**
+	 * Excel/Calc'ın hücreyi formül saymasını engeller (CSV enjeksiyonu): =, +, -, @ ve
+	 * sekme/satır başı ile başlayan değerlerin önüne tek tırnak konur. utm_* gibi alanları
+	 * ziyaretçi belirlediği için dışa aktarmadaki tüm değerlere uygulanır.
+	 */
+	public static function csv_safe( $value ) {
+		$value = (string) $value;
+		if ( '' !== $value && false !== strpos( "=+-@\t\r", $value[0] ) ) {
+			return "'" . $value;
+		}
+		return $value;
+	}
+
 	public static function handle_export() {
 		if ( ! current_user_can( self::CAP ) ) {
 			wp_die( 'Yetkiniz yok.' );
@@ -693,7 +724,7 @@ class ZT_Admin {
 		do {
 			$result = ZT_DB::get_visits( $filters, $page, 200, 'DESC' );
 			foreach ( $result['rows'] as $row ) {
-				fputcsv( $out, array(
+				fputcsv( $out, array_map( array( __CLASS__, 'csv_safe' ), array(
 					$row['visited_at'],
 					$row['ip'],
 					$row['country'],
@@ -713,7 +744,7 @@ class ZT_Admin {
 					isset( $row['utm_campaign'] ) ? $row['utm_campaign'] : '',
 					isset( $row['utm_source'] ) ? $row['utm_source'] : '',
 					isset( $row['utm_medium'] ) ? $row['utm_medium'] : '',
-				), ';' );
+				) ), ';' );
 			}
 			$page++;
 			$has_more = count( $result['rows'] ) === 200 && $page <= 1000; // en fazla 200.000 satır
@@ -825,7 +856,18 @@ class ZT_Admin {
 		}
 		$a = 0x1F1E6 + ( ord( $cc[0] ) - 65 );
 		$b = 0x1F1E6 + ( ord( $cc[1] ) - 65 );
-		return mb_convert_encoding( '&#' . $a . ';&#' . $b . ';', 'UTF-8', 'HTML-ENTITIES' );
+		return self::utf8_chr( $a ) . self::utf8_chr( $b );
+	}
+
+	/**
+	 * 0x10000 ve üzeri bir kod noktasını UTF-8'e çevirir (mbstring gerektirmez;
+	 * PHP 8.2'de kullanımdan kalkan HTML-ENTITIES dönüşümünün yerine).
+	 */
+	private static function utf8_chr( $cp ) {
+		return chr( 0xF0 | ( $cp >> 18 ) )
+			. chr( 0x80 | ( ( $cp >> 12 ) & 0x3F ) )
+			. chr( 0x80 | ( ( $cp >> 6 ) & 0x3F ) )
+			. chr( 0x80 | ( $cp & 0x3F ) );
 	}
 
 	private static function pdf_table( $title, $rows, $row_fn ) {

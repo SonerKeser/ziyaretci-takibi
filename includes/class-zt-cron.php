@@ -36,7 +36,7 @@ class ZT_Cron {
 
 	public static function schedule() {
 		if ( ! wp_next_scheduled( self::DAILY_HOOK ) ) {
-			// Gece 03:30'da (site saatiyle) çalışsın.
+			// Gece 03:30'da (UTC) çalışsın.
 			$first = strtotime( 'tomorrow 03:30', time() );
 			wp_schedule_event( $first, 'daily', self::DAILY_HOOK );
 		}
@@ -61,7 +61,7 @@ class ZT_Cron {
 
 		// Haftalık rapor: seçilen gün geldiyse gönder (send_weekly kendi guard'ıyla mükerrerliği önler).
 		if ( ! empty( $settings['weekly_report'] ) ) {
-			$site_local_ts = ZT_Time::now_ts() + (int) round( (float) get_option( 'gmt_offset' ) * HOUR_IN_SECONDS );
+			$site_local_ts = ZT_Time::local_ts();
 			$today_dow     = (int) gmdate( 'w', $site_local_ts );
 			if ( $today_dow === (int) $settings['report_day'] ) {
 				ZT_Report::send_weekly();

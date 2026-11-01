@@ -315,12 +315,18 @@ class ZT_Tracker {
 	}
 
 	public static function get_ip() {
-		$keys = array(
-			'HTTP_CF_CONNECTING_IP', // Cloudflare
-			'HTTP_X_FORWARDED_FOR',
-			'HTTP_X_REAL_IP',
-			'REMOTE_ADDR',
-		);
+		// Vekil/CDN başlıkları istemci tarafından taklit edilebilir; yalnızca site bir
+		// ters vekil arkasındaysa güvenilir. Ayarlardan kapatılırsa sadece REMOTE_ADDR okunur.
+		$keys = array( 'REMOTE_ADDR' );
+		if ( ZT_Settings::get( 'trust_proxy' ) ) {
+			$keys = array(
+				'HTTP_CF_CONNECTING_IP', // Cloudflare
+				'HTTP_X_FORWARDED_FOR',
+				'HTTP_X_REAL_IP',
+				'REMOTE_ADDR',
+			);
+		}
+		$keys = (array) apply_filters( 'zt_client_ip_headers', $keys );
 		foreach ( $keys as $key ) {
 			if ( ! empty( $_SERVER[ $key ] ) ) {
 				$raw   = wp_unslash( $_SERVER[ $key ] );

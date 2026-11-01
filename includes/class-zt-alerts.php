@@ -32,7 +32,7 @@ class ZT_Alerts {
 	public static function fire( $type, $severity, $title, $message, $ip = '' ) {
 		global $wpdb;
 		$t     = self::table();
-		$since = gmdate( 'Y-m-d H:i:s', ZT_Time::now_ts() - self::cooldown( $type ) );
+		$since = gmdate( 'Y-m-d H:i:s', ZT_Time::local_ts() - self::cooldown( $type ) );
 
 		if ( 'watchip' === $type ) {
 			$exists = $wpdb->get_var( $wpdb->prepare(
@@ -97,7 +97,7 @@ class ZT_Alerts {
 		}
 		global $wpdb;
 		$v         = ZT_DB::visits_table();
-		$now_ts    = ZT_Time::now_ts();
+		$now_ts    = ZT_Time::local_ts();
 		$hour_from = gmdate( 'Y-m-d H:i:s', $now_ts - HOUR_IN_SECONDS );
 
 		$spike = (int) ZT_Settings::get( 'alert_spike' );

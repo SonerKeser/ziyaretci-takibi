@@ -968,7 +968,7 @@
 				var isNew = !state.firstLoad && Number(r.id) > state.lastMaxId;
 				if (Number(r.id) > maxId) { maxId = Number(r.id); }
 				var dm = deviceMeta(r.device);
-				var loc = (r.city || r.country) ? (esc(r.city || '') + (r.city && r.country ? ', ' : '') + esc(r.country || '')) : 'Konum bekleniyor';
+				var loc = (r.city || r.country) ? ((r.city || '') + (r.city && r.country ? ', ' : '') + (r.country || '')) : 'Konum bekleniyor';
 				var src = r.referrer_domain ? esc(r.referrer_domain) : 'doğrudan';
 				return '<div class="zt-feed-item' + (isNew ? ' is-new' : '') + '" data-ip="' + esc(r.ip) + '">' +
 					'<span class="zt-feed-flag">' + flag(r.country_code) + '</span>' +
@@ -2072,6 +2072,9 @@
 			'<div style="border-top:1px solid rgba(255,255,255,0.06);margin-top:14px;padding-top:14px">' +
 			'<b style="font-size:12.5px;display:block;margin-bottom:8px">Sunucu Saati Doğrulama (harici kaynak)</b>' +
 			'<p style="color:var(--zt-muted);font-size:12px;margin:0 0 10px;line-height:1.6">Bazı sunucularda sanallaştırma kaynaklı saat kayması olabilir. Eklenti bu yüzden kayıtları sunucunun kendi saatine değil, periyodik olarak dış kaynaklardan (Cloudflare / güvenilir HTTPS sunucuları) öğrendiği gerçek zamana göre yazar.</p>' +
+			'<div class="zt-set-row" style="border:0;padding:0 0 10px"><div class="zt-set-info"><b>Harici zaman doğrulamasını kullan</b>' +
+			'<p>Kapalıysa yalnızca sunucunun kendi saati kullanılır ve Cloudflare, WordPress.org ve Google\'a hiç istek yapılmaz. Sunucu saatiniz doğruysa kapatabilirsiniz.</p></div>' +
+			'<div class="zt-set-ctl">' + switchHtml('time_sync', s.time_sync) + '</div></div>' +
 			'<div id="zt-time-sync-box"></div>' +
 			'<button type="button" class="zt-btn" id="zt-time-sync-now" style="margin-top:10px;min-height:32px;padding:6px 12px">' + icon('refresh') + 'Şimdi Senkronize Et</button>' +
 			'</div>' +
@@ -2138,6 +2141,9 @@
 			'<div class="zt-set-row"><div class="zt-set-info"><b>IP anonimleştirme (KVKK)</b>' +
 			'<p>IPv4 adreslerinin son bölümü sıfırlanarak saklanır (85.102.34.0 gibi). Kişisel veri saklamayı azaltır; konum doğruluğu şehir düzeyinde kalır.</p></div>' +
 			'<div class="zt-set-ctl">' + switchHtml('anonymize_ip', s.anonymize_ip) + '</div></div>' +
+			'<div class="zt-set-row"><div class="zt-set-info"><b>Vekil/CDN başlıklarına güven</b>' +
+			'<p>Açıkken ziyaretçi IP\'si <code style="color:#67e8f9">CF-Connecting-IP</code>, <code style="color:#67e8f9">X-Forwarded-For</code> ve <code style="color:#67e8f9">X-Real-IP</code> başlıklarından okunur (Cloudflare veya ters vekil arkasındaysanız gerekir). Sitenizin önünde böyle bir katman yoksa kapatın; aksi halde bu başlıklar taklit edilerek kara liste ve hariç tutma kuralları atlatılabilir.</p></div>' +
+			'<div class="zt-set-ctl">' + switchHtml('trust_proxy', s.trust_proxy) + '</div></div>' +
 			'<div class="zt-set-row"><div class="zt-set-info"><b>Hariç tutulan IP adresleri</b>' +
 			'<p>Satır başına bir adres. Önek için * kullanın: <code style="color:#67e8f9">85.208.*</code></p>' +
 			'<textarea class="zt-input zt-textarea" data-set="excluded_ips" placeholder="192.168.1.1&#10;85.208.*" style="margin-top:10px">' + esc(s.excluded_ips || '') + '</textarea></div></div>' +

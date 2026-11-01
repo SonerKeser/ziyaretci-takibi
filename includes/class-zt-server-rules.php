@@ -149,6 +149,10 @@ class ZT_Server_Rules {
 		if ( ! function_exists( 'insert_with_markers' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/misc.php';
 		}
+		// Yönetici kendi IP'sini kilitlemesin: .htaccess engeli wp-admin dahil tüm siteyi kapsar.
+		if ( self::would_block_current() ) {
+			return false;
+		}
 		$path = self::htaccess_path();
 		$st   = self::htaccess_status();
 		if ( ! $st['writable'] ) {
@@ -158,17 +162,39 @@ class ZT_Server_Rules {
 	}
 
 	/**
-	 * İşaretçili bloğu .htaccess'ten kaldırır.
+	 * İşaretçili bloğu (BEGIN/END satırları dahil) .htaccess'ten tamamen kaldırır.
+	 *
+	 * insert_with_markers() boş liste verilince işaretçileri ve açıklama satırlarını bırakır;
+	 * bu durumda blok hâlâ "yönetiliyor" görünür ve ilk kayıtta kurallar yeniden yazılırdı.
+	 * Bu işlev yalnızca ABSPATH ve WP işlevlerine dayanır (uninstall.php de kullanır).
 	 */
 	public static function htaccess_remove() {
-		if ( ! function_exists( 'insert_with_markers' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/misc.php';
-		}
 		$path = self::htaccess_path();
 		if ( ! file_exists( $path ) || ! is_writable( $path ) ) {
 			return false;
 		}
-		return insert_with_markers( $path, self::MARKER, array() );
+		$content = file_get_contents( $path );
+		if ( false === $content ) {
+			return false;
+		}
+		$begin   = preg_quote( '# BEGIN ' . self::MARKER, '/' );
+		$end     = preg_quote( '# END ' . self::MARKER, '/' );
+		$cleaned = preg_replace( '/^[ \t]*' . $begin . '.*?^[ \t]*' . $end . '[ \t]*(?:\R|\z)/ms', '', $content, 1 );
+		if ( null === $cleaned ) {
+			return false;
+		}
+		if ( $cleaned === $content ) {
+			return true; // Kaldırılacak blok yok.
+		}
+		return false !== file_put_contents( $path, $cleaned, LOCK_EX );
+	}
+
+	/**
+	 * Kara liste, şu anki isteği yapan IP'yi (yönetici) kapsıyor mu?
+	 */
+	public static function would_block_current() {
+		$ip = ZT_Tracker::get_ip();
+		return '' !== $ip && ZT_Tracker::ip_in_list( $ip, ZT_Settings::get( 'blocklist' ) );
 	}
 
 	/**

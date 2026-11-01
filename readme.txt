@@ -4,7 +4,7 @@ Tags: ziyaretci, analytics, ip, takip, istatistik
 Requires at least: 5.8
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.9.2
+Stable tag: 1.9.3
 License: GPL-2.0-or-later
 
 Gelişmiş ziyaretçi takibi: IP kayıtları, konum tespiti + dünya haritası, canlı izleme, UTM kampanya, dönem karşılaştırma, yeni-vs-dönen, huni analizi, gerçek zamanlı uyarılar, IP engelleme (uygulama + sunucu düzeyi) ve modern bir istatistik paneli.
@@ -74,7 +74,27 @@ Konum tespiti için IP adresleri ip-api.com servisine toplu olarak gönderilir v
 
 Varsayılan PHP modu sunucu tarafında çalışır, ek istek üretmez. Sayfa önbellekleme eklentisi kullanıyorsanız Ayarlar > Kayıt yöntemi'nden "JS Beacon" moduna geçin; ziyaretler tarayıcıdan REST ucuna gönderilir ve önbellek atlanmaz.
 
+== External services ==
+
+Bu eklenti aşağıdaki dış hizmetlere sunucunuzdan istek yapar:
+
+* **ip-api.com** — Konum tespiti açıkken (Ayarlar > Konum Tespiti) ziyaretçi IP adresleri arka planda toplu olarak http://ip-api.com/batch adresine gönderilir; yanıt olarak ülke, şehir, ISS ve proxy/veri merkezi bilgisi alınır. Her IP yalnızca bir kez sorgulanır. Servis koşulları: https://ip-api.com/docs/legal
+* **Cloudflare, WordPress.org ve Google** — "Harici zaman doğrulamasını kullan" açıkken (Ayarlar > Saat Dilimi), sunucu saatini doğrulamak için en az 15 dakikada bir https://www.cloudflare.com/cdn-cgi/trace, https://api.wordpress.org/core/version-check/1.7/ ve https://www.google.com/generate_204 adreslerine kişisel veri içermeyen istekler yapılır. Gizlilik politikaları: https://www.cloudflare.com/privacypolicy/ , https://wordpress.org/about/privacy/ , https://policies.google.com/privacy
+
+Her iki özellik de Ayarlar'dan kapatılabilir. Eklenti ziyaretçi IP adreslerini ve User-Agent bilgisini sitenizin veritabanında saklar; gizlilik politikanızı buna göre güncelleyin.
+
 == Changelog ==
+
+= 1.9.3 =
+* Düzeltme: WordPress saat dilimi UTC dışında olan sitelerde "bugün", "şu an aktif", canlı ekran ve uyarı pencereleri kayıyordu (1.9.0'dan beri). Pencereler artık site yerel saatiyle hesaplanıyor.
+* Düzeltme: sunucu düzeyi engellemedeki "Kaldır" düğmesi .htaccess bloğunu gerçekten silmiyordu (kurallar sonraki kayıtta geri yazılıyordu). Eklenti silinirken blok .htaccess'ten kaldırılıyor.
+* Güvenlik: CSV dışa aktarımda formül enjeksiyonuna (=, +, -, @) karşı koruma.
+* Güvenlik: yönetici kendi IP'sini engelleyemez; kendi IP'si kara listedeyken kurallar .htaccess'e yazılmaz (kendini siteden kilitleme önlemi).
+* Yeni ayar: "Vekil/CDN başlıklarına güven" (varsayılan açık). Kapalıyken IP yalnızca REMOTE_ADDR'dan okunur.
+* Yeni ayar: "Harici zaman doğrulamasını kullan" (varsayılan açık). Kapalıyken dış sitelere hiç istek yapılmaz.
+* Isı haritası tablosuna satır tavanı eklendi (500.000; "zt_heat_max_rows" filtresiyle değiştirilebilir).
+* PHP 8.2+ uyumluluğu: kullanımdan kalkan HTML-ENTITIES dönüşümü kaldırıldı (PDF rapor sayfası bayrakları).
+* Canlı akışta şehir/ülke adlarının çift kaçışlanması ve batı saat dilimlerinde kohort etiketlerinin bir gün kayması düzeltildi.
 
 = 1.9.2 =
 * Tarih filtresi takvim ikonu: bir önceki düzeltmedeki `background: transparent` kuralı Chrome'un ikon görselini de sildiği için takvim açılıyor ama düğme görünmüyordu; kaldırıldı, ikon artık görünür.

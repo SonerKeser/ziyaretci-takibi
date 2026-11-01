@@ -14,7 +14,9 @@ class ZT_Activator {
 		add_option( 'zt_settings', ZT_Settings::defaults() );
 		add_option( 'zt_db_version', ZT_VERSION );
 		ZT_Cron::schedule();
-		ZT_Time::sync(); // ilk gerçek zaman ölçümü — sonraki her kayıt bunu kullanır.
+		if ( ZT_Settings::get( 'time_sync' ) ) {
+			ZT_Time::sync(); // ilk gerçek zaman ölçümü — sonraki her kayıt bunu kullanır.
+		}
 	}
 
 	public static function deactivate() {

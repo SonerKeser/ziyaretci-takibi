@@ -31,3 +31,9 @@ if ( ! empty( $zt_settings['uninstall_purge'] ) ) {
 
 wp_clear_scheduled_hook( 'zt_daily_maintenance' );
 wp_clear_scheduled_hook( 'zt_geo_tick' );
+
+// Sunucu düzeyi engelleme bloğu eklenti silindikten sonra yönetilemez; .htaccess'ten kaldır.
+if ( ! class_exists( 'ZT_Server_Rules' ) ) {
+	require_once plugin_dir_path( __FILE__ ) . 'includes/class-zt-server-rules.php';
+}
+ZT_Server_Rules::htaccess_remove();

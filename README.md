@@ -52,9 +52,9 @@ Aşağıdaki dış hizmetlere sunucunuzdan istek yapılır:
 ## Bilinen sınırlamalar
 
 - **Arayüz yalnızca Türkçedir**; metinler çeviriye hazır (`__()` ile) değildir.
-- **İstemci IP'si:** IP, sırasıyla `CF-Connecting-IP`, `X-Forwarded-For`, `X-Real-IP`, `REMOTE_ADDR` başlıklarından okunur. Siteniz bir ters vekil/CDN arkasında değilse bu başlıklar istemci tarafından taklit edilebilir; bu durumda IP kara listesi ve hariç tutma kuralları atlatılabilir.
-- **Saat dilimi:** "Bugün", "şu an aktif" ve uyarı pencereleri şu sürümde WordPress saat dilimi **UTC** iken doğru hesaplanır; başka bir dilimde bu pencereler kayar (düzeltme planlanıyor).
-- Sunucu düzeyi (`.htaccess`) engelleme `wp-admin` dahil tüm siteye uygulanır; kendi IP'nizi engellemeyin.
+- **İstemci IP'si:** varsayılan olarak IP, sırasıyla `CF-Connecting-IP`, `X-Forwarded-For`, `X-Real-IP`, `REMOTE_ADDR` başlıklarından okunur. Siteniz bir ters vekil/CDN arkasında değilse **Ayarlar → Gizlilik → "Vekil/CDN başlıklarına güven"** seçeneğini kapatın; aksi halde bu başlıklar istemci tarafından taklit edilebilir ve IP kara listesi/hariç tutma kuralları atlatılabilir.
+- **Zaman doğrulaması:** varsayılan olarak en az 15 dakikada bir Cloudflare, WordPress.org ve Google'a istek yapılır; **Ayarlar → Saat Dilimi**'nden kapatılabilir.
+- Sunucu düzeyi (`.htaccess`) engelleme `wp-admin` dahil tüm siteye uygulanır; eklenti, kendi IP'nizi engellemenize ve bu durumda `.htaccess`'e yazmanıza izin vermez.
 - Önbellekten sunulan sayfalar WordPress'e ulaşmadığı için uygulama içi 403 onları kapsamaz; tam engelleme için sunucu kurallarını kullanın.
 
 ## Lisans

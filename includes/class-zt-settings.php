@@ -23,6 +23,8 @@ class ZT_Settings {
 			'blocklist'       => '',     // engellenen IP'ler (satır başına bir, * öneki)
 			'block_enabled'   => 1,      // kara listeyi fiilen uygula (403)
 			'anonymize_ip'    => 0,
+			'trust_proxy'     => 1,      // CF-Connecting-IP / X-Forwarded-For / X-Real-IP başlıklarına güven
+			'time_sync'       => 1,      // sunucu saatini harici kaynaklarla doğrula (Cloudflare/WordPress.org/Google)
 			'geo_enabled'     => 1,
 			'flag_datacenter' => 1,      // veri merkezi/proxy IP'lerini bot say
 			'weekly_report'   => 0,
@@ -67,6 +69,9 @@ class ZT_Settings {
 		$clean['track_bots']      = empty( $input['track_bots'] ) ? 0 : 1;
 		$clean['track_logged_in'] = empty( $input['track_logged_in'] ) ? 0 : 1;
 		$clean['anonymize_ip']    = empty( $input['anonymize_ip'] ) ? 0 : 1;
+		// Yeni anahtarlar: istekte hiç yoksa (eski arayüz/önbellek) mevcut davranış korunur.
+		$clean['trust_proxy']     = array_key_exists( 'trust_proxy', $input ) ? ( empty( $input['trust_proxy'] ) ? 0 : 1 ) : 1;
+		$clean['time_sync']       = array_key_exists( 'time_sync', $input ) ? ( empty( $input['time_sync'] ) ? 0 : 1 ) : 1;
 		$clean['geo_enabled']     = empty( $input['geo_enabled'] ) ? 0 : 1;
 		$clean['flag_datacenter'] = empty( $input['flag_datacenter'] ) ? 0 : 1;
 		$clean['block_enabled']   = empty( $input['block_enabled'] ) ? 0 : 1;

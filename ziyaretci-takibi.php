@@ -3,7 +3,7 @@
  * Plugin Name:       Ziyaretçi Takibi
  * Plugin URI:        https://szksoft.com
  * Description:       Gelişmiş ziyaretçi takibi: konum + dünya haritası, canlı izleme, UTM kampanya, karşılaştırmalı raporlar, yeni-vs-dönen, huni analizi, gerçek zamanlı uyarılar, IP engelleme (uygulama + sunucu düzeyi) ve modern bir istatistik paneli.
- * Version:           1.9.2
+ * Version:           1.9.3
  * Requires at least: 5.8
  * Requires PHP:      7.4
  * Author:            SZK Soft
@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'ZT_VERSION', '1.9.2' );
+define( 'ZT_VERSION', '1.9.3' );
 define( 'ZT_PLUGIN_FILE', __FILE__ );
 define( 'ZT_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ZT_PLUGIN_URL', plugin_dir_url( __FILE__ ) );

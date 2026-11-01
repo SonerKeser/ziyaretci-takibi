@@ -183,7 +183,7 @@ class ZT_DB {
 		$v = self::visits_table();
 		$g = self::geo_table();
 
-		$now_ts = ZT_Time::now_ts();
+		$now_ts = ZT_Time::local_ts();
 		$today  = gmdate( 'Y-m-d', $now_ts );
 
 		if ( 'today' === $period ) {
@@ -389,7 +389,7 @@ class ZT_DB {
 		$v = self::visits_table();
 		$g = self::geo_table();
 
-		$now_ts     = ZT_Time::now_ts();
+		$now_ts     = ZT_Time::local_ts();
 		$active_from = gmdate( 'Y-m-d H:i:s', $now_ts - max( 60, (int) $window_sec ) );
 		$today_from  = gmdate( 'Y-m-d', $now_ts ) . ' 00:00:00';
 		$hour_from   = gmdate( 'Y-m-d H:i:s', $now_ts - HOUR_IN_SECONDS );
@@ -477,7 +477,7 @@ class ZT_DB {
 		$days   = ( '30d' === $period ) ? 30 : ( ( '90d' === $period ) ? 90 : 7 );
 		$period = in_array( $period, array( '7d', '30d', '90d' ), true ) ? $period : '7d';
 
-		$now_ts   = ZT_Time::now_ts();
+		$now_ts   = ZT_Time::local_ts();
 		$cur_from = gmdate( 'Y-m-d', $now_ts - ( $days - 1 ) * DAY_IN_SECONDS ) . ' 00:00:00';
 		$cur_to   = gmdate( 'Y-m-d', $now_ts ) . ' 23:59:59';
 		$prev_from = gmdate( 'Y-m-d', $now_ts - ( 2 * $days - 1 ) * DAY_IN_SECONDS ) . ' 00:00:00';
@@ -655,7 +655,7 @@ class ZT_DB {
 	 * Dönem için yeni/dönen özeti (PDF/rapor için). $period: today | 7d | 30d.
 	 */
 	public static function visitor_split( $period ) {
-		$now_ts = ZT_Time::now_ts();
+		$now_ts = ZT_Time::local_ts();
 		$today  = gmdate( 'Y-m-d', $now_ts );
 		if ( 'today' === $period ) {
 			$from = $today . ' 00:00:00';
@@ -707,7 +707,7 @@ class ZT_DB {
 		$weeks = min( 16, max( 2, (int) $weeks ) );
 		$epoch = self::COHORT_EPOCH;
 
-		$now_ts   = ZT_Time::now_ts();
+		$now_ts   = ZT_Time::local_ts();
 		$today    = gmdate( 'Y-m-d', $now_ts );
 		$cur_week = (int) $wpdb->get_var( $wpdb->prepare( "SELECT FLOOR(DATEDIFF(%s, %s)/7)", $today, $epoch ) );
 		$start_wk = $cur_week - ( $weeks - 1 );
@@ -772,7 +772,8 @@ class ZT_DB {
 					$cells[] = 0;
 				}
 			}
-			$label     = wp_date( 'j M', strtotime( $epoch ) + $cw * 7 * DAY_IN_SECONDS );
+			// Hafta başı UTC gece yarısıdır; etiket de UTC'de biçimlenmeli (site saat dilimi günü kaydırmasın).
+			$label     = wp_date( 'j M', strtotime( $epoch . ' 00:00:00 UTC' ) + $cw * 7 * DAY_IN_SECONDS, new DateTimeZone( 'UTC' ) );
 			$cohorts[] = array( 'label' => $label, 'size' => $sz, 'cells' => $cells );
 		}
 
@@ -835,7 +836,7 @@ class ZT_DB {
 	 * @param string $period 7d|30d|90d
 	 */
 	public static function get_segments( $a, $b, $period ) {
-		$now_ts = ZT_Time::now_ts();
+		$now_ts = ZT_Time::local_ts();
 		$days   = ( '30d' === $period ) ? 30 : ( ( '90d' === $period ) ? 90 : 7 );
 		$period = in_array( $period, array( '7d', '30d', '90d' ), true ) ? $period : '7d';
 		$from   = gmdate( 'Y-m-d', $now_ts - ( $days - 1 ) * DAY_IN_SECONDS ) . ' 00:00:00';
@@ -880,7 +881,7 @@ class ZT_DB {
 			}
 		}
 
-		$now_ts = ZT_Time::now_ts();
+		$now_ts = ZT_Time::local_ts();
 		if ( '7d' === $window ) {
 			$from = gmdate( 'Y-m-d', $now_ts - 6 * DAY_IN_SECONDS ) . ' 00:00:00';
 		} elseif ( '90d' === $window ) {
@@ -1335,7 +1336,7 @@ class ZT_DB {
 		$g = self::geo_table();
 
 		if ( $retention_days > 0 ) {
-			$cutoff = gmdate( 'Y-m-d H:i:s', ZT_Time::now_ts() - $retention_days * DAY_IN_SECONDS );
+			$cutoff = gmdate( 'Y-m-d H:i:s', ZT_Time::local_ts() - $retention_days * DAY_IN_SECONDS );
 			// Büyük tablolarda kilitlenmemek için parça parça sil.
 			do {
 				$deleted = $wpdb->query( $wpdb->prepare(
@@ -1357,15 +1358,29 @@ class ZT_DB {
 		$wpdb->query( "DELETE g FROM {$g} g LEFT JOIN {$v} v ON v.ip = g.ip WHERE v.ip IS NULL" );
 
 		// Isı haritası kayıtları (saklama süresi).
+		$heat = $wpdb->prefix . 'zt_heat';
 		if ( $retention_days > 0 ) {
-			$heat   = $wpdb->prefix . 'zt_heat';
-			$cutoff = gmdate( 'Y-m-d H:i:s', ZT_Time::now_ts() - $retention_days * DAY_IN_SECONDS );
+			$cutoff = gmdate( 'Y-m-d H:i:s', ZT_Time::local_ts() - $retention_days * DAY_IN_SECONDS );
 			do {
 				$deleted = $wpdb->query( $wpdb->prepare(
 					"DELETE FROM {$heat} WHERE created_at < %s LIMIT 10000",
 					$cutoff
 				) );
 			} while ( $deleted > 0 );
+		}
+
+		// Herkese açık REST ucundan şişmeyi önlemek için ısı haritası satır tavanı (süresiz saklamada da geçerli).
+		$heat_max = (int) apply_filters( 'zt_heat_max_rows', 500000 );
+		if ( $heat_max > 0 ) {
+			$heat_count = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$heat}" );
+			$excess     = $heat_count - $heat_max;
+			while ( $excess > 0 ) {
+				$deleted = (int) $wpdb->query( $wpdb->prepare( "DELETE FROM {$heat} ORDER BY id ASC LIMIT %d", min( 10000, $excess ) ) );
+				if ( $deleted < 1 ) {
+					break;
+				}
+				$excess -= $deleted;
+			}
 		}
 	}
 }
