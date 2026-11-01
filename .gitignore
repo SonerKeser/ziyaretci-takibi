@@ -1,0 +1,8 @@
+# Paketlenmiş sürümler GitHub Releases'a konur, depoya girmez
+*.zip
+
+# Yerel/çalışma dosyaları
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
